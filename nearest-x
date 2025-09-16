@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTGAA Circle Typography</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+
+        .instructions {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="instructions">
+        <strong>Controls:</strong><br>
+        Mouse X: Circle position variation<br>
+        Mouse Y: Circle size and stroke weight<br>
+        Click: Random seed<br>
+        Press 'S': Save image
+    </div>
+
+    <script>
+        var actRandomSeed = 0;
+        var circleAlpha = 130;
+        var circleColor;
+        var letterPoints = [];
+        var neighborSlider;  // Slider for number of neighbors
+var sliderLabel;
+
+        function setup() {
+            createCanvas(windowWidth / 1.03, windowHeight / 1.2);
+            noFill();
+            circleColor = color(0, 0, 0, circleAlpha);
+
+            // Define points for each letter
+            generateLetterPoints();
+            randomSeed(actRandomSeed);
+
+            // Create slider: min 1, max 6 neighbors, start 3, step 1
+            neighborSlider = createSlider(1, 20, 3, 1);
+            let sliderX = windowWidth/1.03 - 170;  // 150px slider width + 20px margin
+            let sliderY = 20;
+            neighborSlider.position(sliderX, sliderY);
+            neighborSlider.style('width', '150px');
+
+               // Create a div for slider label & value
+    sliderLabel = createDiv('');
+    sliderLabel.position(sliderX, sliderY + 30);
+    sliderLabel.style('font-family', 'Helvetica, Arial, sans-serif');
+    sliderLabel.style('font-size', '14px');
+    sliderLabel.style('color', '#333');
+    sliderLabel.style('width', '180px');
+        }
+
+        function generateLetterPoints() {
+            letterPoints = [];
+            var letterWidth = 260;
+            var letterHeight = 320;
+            var startX = 60;
+            var startY = 200;
+            var spacing = 10;
+            var extraHTSpacing = 20; // extra space between H and T
+
+            // H
+            addLetterH(startX, startY, letterWidth, letterHeight);
+
+            // T (add extraHTSpacing)
+            addLetterT(startX + letterWidth + spacing + extraHTSpacing, startY, letterWidth, letterHeight);
+
+            // G
+            addLetterG(startX + 2 * (letterWidth + spacing) + extraHTSpacing, startY, letterWidth, letterHeight);
+
+            // A
+            addLetterA(startX + 3 * (letterWidth + spacing) + extraHTSpacing, startY, letterWidth, letterHeight);
+
+            // A
+            addLetterA(startX + 4 * (letterWidth + spacing) + extraHTSpacing, startY, letterWidth, letterHeight);
+        }
+
+        function addLetterH(x, y, w, h) {
+            var pointSpacing = 8;
+
+            // Left vertical line
+            for (var i = 0; i <= h; i += pointSpacing) {
+                letterPoints.push({ x: x, y: y + i });
+            }
+
+            // Right vertical line
+            for (var i = 0; i <= h; i += pointSpacing) {
+                letterPoints.push({ x: x + w, y: y + i });
+            }
+
+            // Horizontal middle line
+            for (var i = 0; i <= w; i += pointSpacing) {
+                letterPoints.push({ x: x + i, y: y + h / 2 });
+            }
+        }
+
+        function addLetterT(x, y, w, h) {
+            var pointSpacing = 8;
+
+            // Top horizontal line
+            for (var i = 0; i <= w; i += pointSpacing) {
+                letterPoints.push({ x: x + i, y: y });
+            }
+
+            // Vertical center line
+            for (var i = 0; i <= h; i += pointSpacing) {
+                letterPoints.push({ x: x + w / 2, y: y + i });
+            }
+        }
+
+        function addLetterG(x, y, w, h) {
+            var pointSpacing = 8;
+            var radiusX = w / 2;
+            var radiusY = h / 2;
+            var centerX = x + radiusX;
+            var centerY = y + radiusY;
+
+            // Left arc - from bottom, up and around to top (more points)
+            for (var angle = PI / 2; angle <= PI + PI / 2; angle += 0.07) {
+                var px = centerX + cos(angle) * radiusX;
+                var py = centerY + sin(angle) * radiusY;
+                letterPoints.push({ x: px, y: py });
+            }
+
+            // Top curved edge
+            for (var angle = PI + PI / 2; angle <= TWO_PI; angle += 0.15) {
+                var px = centerX + cos(angle) * radiusX;
+                var py = centerY + sin(angle) * radiusY;
+                if (px >= centerX && px <= x + w * 0.75) {
+                    letterPoints.push({ x: px, y: py });
+                }
+            }
+
+            // Horizontal line in middle right
+            for (var i = 0; i <= w / 2; i += pointSpacing) {
+                letterPoints.push({ x: x + w / 2 + i, y: y + h / 2 });
+            }
+
+            // Bottom arc - from right side to left
+            for (var angle = 0; angle <= PI / 2; angle += 0.15) {
+                var px = centerX + cos(angle) * radiusX;
+                var py = centerY + sin(angle) * radiusY;
+                letterPoints.push({ x: px, y: py });
+            }
+        }
+
+        function addLetterA(x, y, w, h) {
+            var pointSpacing = 8;
+            var peakX = x + w / 2;
+            var peakY = y;
+
+            // Left diagonal
+            var leftPoints = Math.floor(h / pointSpacing);
+            for (var i = 0; i <= leftPoints; i++) {
+                var t = i / leftPoints;
+                var px = lerp(peakX, x, t);
+                var py = lerp(peakY, y + h, t);
+                letterPoints.push({ x: px, y: py });
+            }
+
+            // Right diagonal
+            for (var i = 0; i <= leftPoints; i++) {
+                var t = i / leftPoints;
+                var px = lerp(peakX, x + w, t);
+                var py = lerp(peakY, y + h, t);
+                letterPoints.push({ x: px, y: py });
+            }
+
+            // Horizontal crossbar
+            var crossY = y + h * 0.6;
+            var crossLeft = x + w * 0.25;
+            var crossRight = x + w * 0.75;
+            for (var i = 0; i <= (crossRight - crossLeft); i += pointSpacing) {
+                letterPoints.push({ x: crossLeft + i, y: crossY });
+            }
+        }
+
+        function draw() {
+            background(255);
+            randomSeed(actRandomSeed);
+            stroke(circleColor);
+            // strokeWeight(mouseY / 60);
+
+            // Compute current positions (with shifts) for all points
+            let shiftedPoints = [];
+            for (let i = 0; i < letterPoints.length; i++) {
+                let point = letterPoints[i];
+                let shiftX = random(-mouseX, mouseX) / 20;
+                let shiftY = random(-mouseX, mouseX) / 20;
+                shiftedPoints.push({ x: point.x + shiftX, y: point.y + shiftY });
+            }
+
+            let numConnections = neighborSlider.value();  // Get current slider value
+            // Draw circles & bonds to the 3–4 nearest neighbors
+              sliderLabel.html(
+        'Connections per circle:<br><strong>' + numConnections + '</strong>'
+    );
+            for (let i = 0; i < shiftedPoints.length; i++) {
+                let pt = shiftedPoints[i];
+                let circleSize = mouseY / 15;
+                ellipse(pt.x, pt.y, circleSize, circleSize);
+
+                // Compute distances to all other points
+                let neighbors = [];
+                for (let j = 0; j < shiftedPoints.length; j++) {
+                    if (i === j) continue;
+                    let d = dist(pt.x, pt.y, shiftedPoints[j].x, shiftedPoints[j].y);
+                    neighbors.push({ idx: j, dist: d });
+                }
+
+                // Sort by distance and keep closest neighbors based on slider
+                neighbors.sort((a, b) => a.dist - b.dist);
+                for (let k = 0; k < numConnections && k < neighbors.length; k++) {
+                    let nIdx = neighbors[k].idx;
+                    stroke(0, 80);
+                    strokeWeight(2);
+                    line(pt.x, pt.y, shiftedPoints[nIdx].x, shiftedPoints[nIdx].y);
+                }
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>
