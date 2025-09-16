@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTGAA Circle Typography</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        .instructions {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="instructions">
+        <strong>Controls:</strong><br />
+        Mouse X: Circle position variation<br />
+        Mouse Y: Circle size and stroke weight<br />
+        Click: Random seed<br />
+        Press 'S': Save image
+    </div>
+
+    <script>
+        // Global variables
+        var actRandomSeed = 0;
+        var circleAlpha = 130;
+        var letterPoints = [];
+        var letterIndices = []; // Indices ranges for each letter
+        var letterColors = [
+            '#113558', // H - dark navy
+            '#C9D4E0', // T - light gray-blue
+            '#E3DAC9', // G - pale beige
+            '#E4493B', // A - coral red
+            '#2E7F5F'  // A - sage green
+        ];
+
+        function setup() {
+            createCanvas(windowWidth / 1.03, windowHeight / 1.2);
+            generateLetterPoints();
+            randomSeed(actRandomSeed);
+        }
+
+        function generateLetterPoints() {
+            letterPoints = [];
+            letterIndices = [];
+
+            var letterWidth = 260;
+            var letterHeight = 320;
+            var startX = 60;
+            var startY = 200;
+            var spacing = 10;
+            var extraHTSpacing = 20; // extra space between H and T
+
+            // H
+            let start = letterPoints.length;
+            addLetterH(startX, startY, letterWidth, letterHeight);
+            letterIndices.push({start: start, end: letterPoints.length});
+
+            // T
+            start = letterPoints.length;
+            addLetterT(startX + letterWidth + spacing + extraHTSpacing, startY, letterWidth, letterHeight);
+            letterIndices.push({start: start, end: letterPoints.length});
+
+            // G
+            start = letterPoints.length;
+            addLetterG(startX + 2 * (letterWidth + spacing) + extraHTSpacing, startY, letterWidth, letterHeight);
+            letterIndices.push({start: start, end: letterPoints.length});
+
+            // A (first)
+            start = letterPoints.length;
+            addLetterA(startX + 3 * (letterWidth + spacing) + extraHTSpacing, startY, letterWidth, letterHeight);
+            letterIndices.push({start: start, end: letterPoints.length});
+
+            // A (second)
+            start = letterPoints.length;
+            addLetterA(startX + 4 * (letterWidth + spacing) + extraHTSpacing, startY, letterWidth, letterHeight);
+            letterIndices.push({start: start, end: letterPoints.length});
+        }
+
+        function addLetterH(x, y, w, h) {
+            var pointSpacing = 8;
+
+            // Left vertical line
+            for (var i = 0; i <= h; i += pointSpacing) {
+                letterPoints.push({x: x, y: y + i});
+            }
+
+            // Right vertical line
+            for (var i = 0; i <= h; i += pointSpacing) {
+                letterPoints.push({x: x + w, y: y + i});
+            }
+
+            // Horizontal middle line
+            for (var i = 0; i <= w; i += pointSpacing) {
+                letterPoints.push({x: x + i, y: y + h / 2});
+            }
+        }
+
+        function addLetterT(x, y, w, h) {
+            var pointSpacing = 8;
+
+            // Top horizontal line
+            for (var i = 0; i <= w; i += pointSpacing) {
+                letterPoints.push({x: x + i, y: y});
+            }
+
+            // Vertical center line
+            for (var i = 0; i <= h; i += pointSpacing) {
+                letterPoints.push({x: x + w / 2, y: y + i});
+            }
+        }
+
+        function addLetterG(x, y, w, h) {
+            var pointSpacing = 8;
+            var radiusX = w / 2;
+            var radiusY = h / 2;
+            var centerX = x + radiusX;
+            var centerY = y + radiusY;
+
+            // Left arc - bottom to top
+            for (var angle = PI / 2; angle <= PI + PI / 2; angle += 0.07) {
+                var px = centerX + cos(angle) * radiusX;
+                var py = centerY + sin(angle) * radiusY;
+                letterPoints.push({x: px, y: py});
+            }
+
+            // Top curved edge
+            for (var angle = PI + PI / 2; angle <= TWO_PI; angle += 0.15) {
+                var px = centerX + cos(angle) * radiusX;
+                var py = centerY + sin(angle) * radiusY;
+                if (px >= centerX && px <= x + w * 0.75) {
+                    letterPoints.push({x: px, y: py});
+                }
+            }
+
+            // Horizontal line middle right
+            for (var i = 0; i <= w / 2; i += pointSpacing) {
+                letterPoints.push({x: x + w / 2 + i, y: y + h / 2});
+            }
+
+            // Bottom arc - right side to left
+            for (var angle = 0; angle <= PI / 2; angle += 0.15) {
+                var px = centerX + cos(angle) * radiusX;
+                var py = centerY + sin(angle) * radiusY;
+                letterPoints.push({x: px, y: py});
+            }
+        }
+
+        function addLetterA(x, y, w, h) {
+            var pointSpacing = 8;
+            var peakX = x + w / 2;
+            var peakY = y;
+
+            var leftPoints = Math.floor(h / pointSpacing);
+            for (var i = 0; i <= leftPoints; i++) {
+                var t = i / leftPoints;
+                var px = lerp(peakX, x, t);
+                var py = lerp(peakY, y + h, t);
+                letterPoints.push({x: px, y: py});
+            }
+
+            for (var i = 0; i <= leftPoints; i++) {
+                var t = i / leftPoints;
+                var px = lerp(peakX, x + w, t);
+                var py = lerp(peakY, y + h, t);
+                letterPoints.push({x: px, y: py});
+            }
+
+            var crossY = y + h * 0.6;
+            var crossLeft = x + w * 0.25;
+            var crossRight = x + w * 0.75;
+            for (var i = 0; i <= crossRight - crossLeft; i += pointSpacing) {
+                letterPoints.push({x: crossLeft + i, y: crossY});
+            }
+        }
+
+        function draw() {
+            background(255);
+            randomSeed(actRandomSeed);
+
+            // Compute jittered positions for all points
+            let shiftedPoints = [];
+            for (let i = 0; i < letterPoints.length; i++) {
+                let point = letterPoints[i];
+                let shiftX = random(-mouseX, mouseX) / 20;
+                let shiftY = random(-mouseX, mouseX) / 20;
+                shiftedPoints.push({x: point.x + shiftX, y: point.y + shiftY});
+            }
+
+            // Draw colored circles with transparency, no outline stroke
+            for (let l = 0; l < letterIndices.length; l++) {
+                noStroke();
+                let c = color(letterColors[l]);
+                c.setAlpha(circleAlpha);
+                fill(c);
+
+                for (let i = letterIndices[l].start; i < letterIndices[l].end; i++) {
+                    let pt = shiftedPoints[i];
+                    let circleSize = mouseY / 15;
+                    ellipse(pt.x, pt.y, circleSize, circleSize);
+                }
+            }
+
+            // Draw bonds/lines connecting each circle to 4 nearest neighbors
+            for (let i = 0; i < shiftedPoints.length; i++) {
+                let pt = shiftedPoints[i];
+                // Compute distances to all other points
+                let neighbors = [];
+                for (let j = 0; j < shiftedPoints.length; j++) {
+                    if (i === j) continue;
+                    let d = dist(pt.x, pt.y, shiftedPoints[j].x, shiftedPoints[j].y);
+                    neighbors.push({idx: j, dist: d});
+                }
+                neighbors.sort((a, b) => a.dist - b.dist);
+                let numConnections = 5;
+                stroke(0, 20);
+                strokeWeight(1);
+                for (let k = 0; k < numConnections && k < neighbors.length; k++) {
+                    let nIdx = neighbors[k].idx;
+                    let np = shiftedPoints[nIdx];
+                    line(pt.x, pt.y, np.x, np.y);
+                }
+            }
+        }
+
+        // Add mousePressed to reset random seed on click
+        function mousePressed() {
+            actRandomSeed = random(100000);
+            randomSeed(actRandomSeed);
+        }
+
+        // Save canvas on 'S' key press
+        function keyReleased() {
+            if (key === 's' || key === 'S') {
+                saveCanvas('htgaa_' + Date.now(), 'png');
+            }
+        }
+    </script>
+</body>
+</html>
